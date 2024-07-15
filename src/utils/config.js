@@ -18,6 +18,13 @@ function loadConfig() {
         }
         const configData = fs.readFileSync(configPath, 'utf8');
         cachedConfig = JSON.parse(configData);
+
+        if (cachedConfig.codebase_path) {
+            cachedConfig.codebase_path = path.resolve(process.cwd(), cachedConfig.codebase_path);
+        } else {
+            cachedConfig.codebase_path = process.cwd();
+        }
+
         return cachedConfig;
     } catch (error) {
         console.error('Error loading config:', error.message);
@@ -26,3 +33,4 @@ function loadConfig() {
 }
 
 export { loadConfig };
+

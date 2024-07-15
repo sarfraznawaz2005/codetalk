@@ -47,42 +47,37 @@ async function createVectorStore() {
 
     const ig = ignore().add(config.ignore_patterns || []);
 
-    const currentDirectory = process.cwd();
+    const codebasePath = config.codebase_path;
     const documents = [];
 
     async function walkDir(dir) {
         const entries = await fs.readdir(dir, { withFileTypes: true });
         for (const entry of entries) {
             const fullPath = path.join(dir, entry.name);
-            const relativePath = path.relative(currentDirectory, fullPath);
+            const relativePath = path.relative(codebasePath, fullPath);
             if (ig.ignores(relativePath)) continue;
 
             if (entry.isDirectory()) {
                 const reachedLimit = await walkDir(fullPath);
                 if (reachedLimit) return true;
-            } else {
-                const ext = path.extname(entry.name);
-                if (fileExtensions[ext]) {
-                    try {
-                        const content = await fs.readFile(fullPath, 'utf8');
-                        const tokens = encode(content).length;
-                        if (totalTokens + tokens > maxTokenLimit) {
-                            console.log(`Reached token limit. Stopping at ${totalTokens} tokens.`);
-                            return true;
-                        }
-                        totalTokens += tokens;
-                        documents.push({ pageContent: content, metadata: { source: fullPath } });
-                    } catch (error) {
-                        console.warn(`Error reading file ${fullPath}: ${error.message}`);
-                    }
+            } else if (entry.isFile() && fileExtensions[path.extname(entry.name)]) {
+                const content = await fs.readFile(fullPath, 'utf8');
+                const tokens = encode(content).length;
+                if (totalTokens + tokens > maxTokenLimit) {
+                    return true;
                 }
+                totalTokens += tokens;
+                documents.push({
+                    pageContent: content,
+                    metadata: { source: relativePath }
+                });
             }
         }
         return false;
     }
 
     try {
-        const reachedLimit = await walkDir(currentDirectory);
+        const reachedLimit = await walkDir(codebasePath);
 
         if (reachedLimit) {
             console.log(`Processed ${documents.length} documents before reaching token limit.`);
@@ -131,4 +126,5 @@ async function vectorStoreExists() {
 }
 
 export { clearVectorStore, createVectorStore, loadVectorStore, vectorStoreExists };
+
 
