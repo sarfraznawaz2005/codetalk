@@ -121,13 +121,15 @@ async function queryOllama(ollama, prompt, history, config) {
 
 async function buildContext() {
     const vectorStore = await loadVectorStore();
-    const documents = await vectorStore.similaritySearch("");
-    const maxContextLength = 100000;
+
+    // TODO: we need to increase second argument to get more documents for llm context, however it is giving too many requests error, need to fix.
+    const documents = await vectorStore.similaritySearch("", 10);
+    const maxContextLength = 10000000;
     let context = "";
 
     for (const doc of documents) {
         const newContent = `File: ${doc.metadata.source}\n${doc.pageContent}\n\n`;
-        if (context.length + newContent.length > maxContextLength) break;
+        //if (context.length + newContent.length > maxContextLength) break;
         context += newContent;
     }
     return context;
@@ -153,9 +155,9 @@ function constructFullPrompt(context, conversationHistory, prompt) {
     Question: ${prompt}
     Answer:`;
 
-    // console.log('________________________________________________________________');
-    // console.log(fullPrompt);
-    // console.log('________________________________________________________________');
+    console.log('________________________________________________________________');
+    console.log(fullPrompt);
+    console.log('________________________________________________________________');
 
     return fullPrompt;
 }
