@@ -96,6 +96,8 @@ async function createVectorStore() {
 
         const embeddings = getEmbeddings(config);
 
+        // TODO: Decide if we must add complete documents to VS or split them
+
         const vectorStore = await FaissStore.fromDocuments(
             documents,
             embeddings

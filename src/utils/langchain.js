@@ -38,7 +38,7 @@ async function queryLLM(llm, prompt, history) {
 
 async function queryGemini(genAI, prompt, history, config, retries = 3) {
     const model = genAI.getGenerativeModel({ model: config.model_name });
-    const context = await buildContext();
+    const context = await buildContext(prompt);
     const conversationContext = formatConversationHistory(history);
     const fullPrompt = constructFullPrompt(context, conversationContext, prompt);
 
@@ -75,7 +75,7 @@ async function queryGemini(genAI, prompt, history, config, retries = 3) {
 
 
 async function queryOpenAI(openai, prompt, history, config) {
-    const context = await buildContext();
+    const context = await buildContext(prompt);
     const conversationContext = formatConversationHistory(history);
     const fullPrompt = constructFullPrompt(context, conversationContext, prompt);
 
@@ -109,8 +109,8 @@ async function queryOpenAI(openai, prompt, history, config) {
     return fullResponse;
 }
 
-async function queryOllama(ollama, prompt, history, config) {
-    const context = await buildContext();
+async function queryOllama(ollama, prompt, history) {
+    const context = await buildContext(prompt);
     const conversationContext = formatConversationHistory(history);
     const fullPrompt = constructFullPrompt(context, conversationContext, prompt);
 
@@ -119,19 +119,17 @@ async function queryOllama(ollama, prompt, history, config) {
 }
 
 
-async function buildContext() {
+async function buildContext(userQuestion) {
     const vectorStore = await loadVectorStore();
 
-    // TODO: we need to increase second argument to get more documents for llm context, however it is giving too many requests error, need to fix.
-    const documents = await vectorStore.similaritySearch("", 10);
-    const maxContextLength = 10000000;
+    const documents = await vectorStore.similaritySearch(userQuestion, 10);
     let context = "";
 
     for (const doc of documents) {
         const newContent = `File: ${doc.metadata.source}\n${doc.pageContent}\n\n`;
-        //if (context.length + newContent.length > maxContextLength) break;
         context += newContent;
     }
+
     return context;
 }
 
