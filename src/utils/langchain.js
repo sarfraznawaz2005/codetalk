@@ -155,9 +155,9 @@ function constructFullPrompt(context, conversationHistory, prompt) {
     Question: ${prompt}
     Answer:`;
 
-    console.log('________________________________________________________________');
-    console.log(fullPrompt);
-    console.log('________________________________________________________________');
+    // console.log('________________________________________________________________');
+    // console.log(fullPrompt);
+    // console.log('________________________________________________________________');
 
     return fullPrompt;
 }
