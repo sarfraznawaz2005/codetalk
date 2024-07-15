@@ -23,6 +23,7 @@ function initializeLLM() {
 
 async function queryLLM(llm, prompt, history) {
     const config = loadConfig();
+
     switch (config.llm_provider) {
         case 'gemini':
             return queryGemini(llm, prompt, history, config);
@@ -35,28 +36,43 @@ async function queryLLM(llm, prompt, history) {
     }
 }
 
-async function queryGemini(genAI, prompt, history, config) {
+async function queryGemini(genAI, prompt, history, config, retries = 3) {
     const model = genAI.getGenerativeModel({ model: config.model_name });
     const context = await buildContext();
     const conversationContext = formatConversationHistory(history);
     const fullPrompt = constructFullPrompt(context, conversationContext, prompt);
 
     let fullResponse = '';
-    const result = await model.generateContentStream(fullPrompt);
 
-    if (result.stream) {
-        for await (const chunk of result.stream) {
-            const chunkText = chunk.text();
-            fullResponse += chunkText;
-            process.stdout.write('\x1b[34m' + chunkText + '\x1b[0m');
+    for (let attempt = 0; attempt < retries; attempt++) {
+        try {
+            const result = await model.generateContentStream(fullPrompt);
+
+            if (result.stream) {
+                for await (const chunk of result.stream) {
+                    const chunkText = chunk.text();
+                    fullResponse += chunkText;
+                    process.stdout.write('\x1b[34m' + chunkText + '\x1b[0m');
+                }
+            } else {
+                fullResponse = result.text();
+                process.stdout.write('\x1b[34m' + fullResponse + '\x1b[0m');
+            }
+
+            return fullResponse;
+        } catch (error) {
+            if (error.message.includes('Failed to parse stream') && attempt < retries - 1) {
+                console.warn(`Stream parsing failed. Retrying (${attempt + 1}/${retries})...`);
+                await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
+            } else {
+                throw error;
+            }
         }
-    } else {
-        fullResponse = result.text();
-        process.stdout.write('\x1b[34m' + fullResponse + '\x1b[0m');
     }
 
-    return fullResponse;
+    throw new Error('Max retries reached. Unable to get a response from the API.');
 }
+
 
 async function queryOpenAI(openai, prompt, history, config) {
     const context = await buildContext();
