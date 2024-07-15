@@ -139,12 +139,15 @@ function formatConversationHistory(history) {
 
 function constructFullPrompt(context, conversationHistory, prompt) {
     const fullPrompt = `
-    Use the following context and optionally conversation history if it is not empty to
-    answer the question in detail and easy to understand language. Format your response
-    for command-line display: use plain text only, avoid special formatting like markdown
-    or HTML, and structure information with simple indentation or line breaks if needed.
+    Use the following context and optionally conversation history if it is not empty to answer
+    the question in detail and easy to understand language. Format your response for command-line
+    display: use plain text only, avoid special formatting like markdown or HTML, and structure
+    information with simple indentation or line breaks if needed.
 
-    Context:
+    You have access to all files and their contents via the Context given below. Ensure that your
+    answer is based solely on the provided context, particularly the contents of the files.
+
+    Context (file paths and contents):
     ${context}
 
     Conversation history:
