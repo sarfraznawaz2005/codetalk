@@ -49,16 +49,22 @@ async function createVectorStore() {
 
     const codebasePath = config.codebase_path;
     const documents = [];
+    let treeOutput = '';
 
-    async function walkDir(dir) {
+    async function walkDir(dir, prefix = '') {
         const entries = await fs.readdir(dir, { withFileTypes: true });
-        for (const entry of entries) {
+        for (let i = 0; i < entries.length; i++) {
+            const entry = entries[i];
             const fullPath = path.join(dir, entry.name);
             const relativePath = path.relative(codebasePath, fullPath);
             if (ig.ignores(relativePath)) continue;
 
+            const isLast = i === entries.length - 1;
+            const newPrefix = prefix + (isLast ? '└── ' : '├── ');
+            treeOutput += newPrefix + entry.name + '\n';
+
             if (entry.isDirectory()) {
-                const reachedLimit = await walkDir(fullPath);
+                const reachedLimit = await walkDir(fullPath, prefix + (isLast ? '    ' : '│   '));
                 if (reachedLimit) return true;
             } else if (entry.isFile() && fileExtensions[path.extname(entry.name)]) {
                 const content = await fs.readFile(fullPath, 'utf8');
@@ -78,6 +84,9 @@ async function createVectorStore() {
 
     try {
         const reachedLimit = await walkDir(codebasePath);
+
+        console.log('Files added to vector store:');
+        console.log(treeOutput);
 
         if (reachedLimit) {
             console.log(`Processed ${documents.length} documents before reaching token limit.`);
@@ -126,5 +135,3 @@ async function vectorStoreExists() {
 }
 
 export { clearVectorStore, createVectorStore, loadVectorStore, vectorStoreExists };
-
-
