@@ -20,6 +20,7 @@ Create a `codetalk.json` file in the project root with the following structure:
 
 ````json
 {
+  "codebase_path": "./",
   "llm_provider": "openai",
   "api_key": "your-api-key",
   "model_name": "gpt-3.5-turbo",
