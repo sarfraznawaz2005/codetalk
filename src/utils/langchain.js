@@ -117,11 +117,11 @@ async function queryGemini(genAI, prompt, history, config, retries = 3) {
                 for await (const chunk of result.stream) {
                     const chunkText = chunk.text();
                     fullResponse += chunkText;
-                    process.stdout.write('\x1b[34m' + chunkText + '\x1b[0m');
+                    process.stdout.write('\x1b[33m' + chunkText + '\x1b[0m');
                 }
             } else {
                 fullResponse = result.text();
-                process.stdout.write('\x1b[34m' + fullResponse + '\x1b[0m');
+                process.stdout.write('\x1b[33m' + fullResponse + '\x1b[0m');
             }
 
             return fullResponse;
@@ -156,7 +156,7 @@ async function queryOpenAI(openai, prompt, history, config) {
                     fullResponse += token;
                     buffer += token;
                     if (buffer.length > 20 || token.includes('\n')) {
-                        process.stdout.write('\x1b[34m' + buffer + '\x1b[0m');
+                        process.stdout.write('\x1b[33m' + buffer + '\x1b[0m');
                         buffer = '';
                     }
                 },
@@ -167,7 +167,7 @@ async function queryOpenAI(openai, prompt, history, config) {
     await streamingModel.invoke(fullPrompt);
 
     if (buffer.length > 0) {
-        process.stdout.write('\x1b[34m' + buffer + '\x1b[0m');
+        process.stdout.write('\x1b[33m' + buffer + '\x1b[0m');
     }
 
     console.log(); // for output clearity
@@ -243,13 +243,13 @@ async function constructFullPrompt(llm, context, conversationHistory, prompt) {
 
     if (finalUserQuestion !== prompt) {
         console.log('--------------------------------------------------------------------------');
-        console.log('Converted Smart Question: ', finalUserQuestion);
+        console.log('\x1b[33mConverted Smart Question: \x1b[0m', finalUserQuestion);
         console.log('--------------------------------------------------------------------------');
         console.log()
     }
 
     console.log('--------------------------------------------------------------------------');
-    console.log('Matched Context Files:');
+    console.log('\x1b[33mMatched Context Files:\x1b[0m');
     console.log('--------------------------------------------------------------------------');
     console.log(context.map(item => '• ' + item.file).join('\n'));
     console.log('--------------------------------------------------------------------------');
