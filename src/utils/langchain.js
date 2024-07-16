@@ -104,7 +104,8 @@ async function queryOpenAI(openai, prompt, history, config) {
     if (buffer.length > 0) {
         process.stdout.write('\x1b[34m' + buffer + '\x1b[0m');
     }
-    console.log();
+
+    console.log(); // for output clearity
 
     return fullResponse;
 }
@@ -123,11 +124,11 @@ async function buildContext(userQuestion) {
     const vectorStore = await loadVectorStore();
 
     const documents = await vectorStore.similaritySearch(userQuestion, 10);
-    let context = "";
+    const context = [];
 
     for (const doc of documents) {
-        const newContent = `File: ${doc.metadata.source}\n${doc.pageContent}\n\n`;
-        context += newContent;
+        const text = `File: ${doc.metadata.source}\n${doc.pageContent}\n\n`;
+        context.push({ text, file: doc.metadata.source });
     }
 
     return context;
@@ -138,7 +139,12 @@ function formatConversationHistory(history) {
 }
 
 function constructFullPrompt(context, conversationHistory, prompt) {
+
+
+    const contextText = context.map(item => item.text).join('\n');
+
     const fullPrompt = `
+    You are an application architect with full knowledge of project via below given context.
     Use the following context and optionally conversation history if it is not empty to answer
     the question in detail and easy to understand language. Format your response for command-line
     display: use plain text only, avoid special formatting like markdown or HTML, and structure
@@ -148,13 +154,20 @@ function constructFullPrompt(context, conversationHistory, prompt) {
     answer is based solely on the provided context, particularly the contents of the files.
 
     Context (file paths and contents):
-    ${context}
+    ${contextText}
 
     Conversation history:
     ${conversationHistory}
 
     Question: ${prompt}
     Answer:`;
+
+    console.log('--------------------------------------------------------------------------');
+    console.log('Matched Context Files:');
+    console.log('--------------------------------------------------------------------------');
+    console.log(context.map(item => '• ' + item.file).join('\n'));
+    console.log('--------------------------------------------------------------------------');
+    console.log()
 
     // console.log('________________________________________________________________');
     // console.log(fullPrompt);
