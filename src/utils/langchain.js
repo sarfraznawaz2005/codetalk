@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
 import { Ollama } from "@langchain/community/llms/ollama";
 import { OpenAI } from "@langchain/openai";
 import { loadConfig } from './config.js';
@@ -81,7 +81,28 @@ async function getStandAloneQuestion(llm, query, conv_history) {
 
 
 async function queryGemini(genAI, prompt, history, config, retries = 3) {
-    const model = genAI.getGenerativeModel({ model: config.model_name });
+    const model = genAI.getGenerativeModel({
+        model: config.model_name,
+        safetySettings: [
+            {
+                category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+                threshold: HarmBlockThreshold.BLOCK_NONE
+            },
+            {
+                category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                threshold: HarmBlockThreshold.BLOCK_NONE
+            },
+            {
+                category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                threshold: HarmBlockThreshold.BLOCK_NONE
+            },
+            {
+                category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                threshold: HarmBlockThreshold.BLOCK_NONE
+            }
+        ]
+    });
+
     const context = await buildContext(prompt);
     const conversationContext = formatConversationHistory(history);
     const fullPrompt = await constructFullPrompt(genAI, context, conversationContext, prompt);
