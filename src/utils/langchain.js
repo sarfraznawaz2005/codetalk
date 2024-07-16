@@ -4,6 +4,7 @@ import { OpenAI } from "@langchain/openai";
 import { loadConfig } from './config.js';
 import { loadVectorStore } from './vectorStore.js';
 
+
 function initializeLLM() {
     const config = loadConfig();
     switch (config.llm_provider) {
@@ -36,11 +37,54 @@ async function queryLLM(llm, prompt, history) {
     }
 }
 
+
+async function getStandAloneQuestion(llm, query, conv_history) {
+    const prompt = `
+    Given the following conversation and a follow up question, rephrase the follow up question
+    to be a standalone question. If provided context does not include a follow-up question, then
+    just answer with "No Question Provided".
+
+    Be smart and think before answering. For example if user asks about overview or dependecies of
+    the project, you should rephrase to include files like composer.json, package.json, README.md,
+    etc files for example.
+
+    Similarly, if user asks "I want to add remember me checkbox to login page, how do i do it", then
+    you should think what type of project is this. If it is laravel project for example, you should
+    rephrase accordingly to include relevant files in rephrased question. In this case, you mgiht want
+    to add Controller paths and views for login page including files used in namespace in controller in
+    your rephrased question.
+
+    conversation history: ${conv_history}
+    follow-up question: ${query}
+    standalone question:`;
+
+    //console.log(prompt);
+
+    const config = loadConfig();
+
+    let response;
+    switch (config.llm_provider) {
+        case 'gemini':
+            const model = llm.getGenerativeModel({ model: config.model_name });
+            response = await model.generateContent(prompt);
+            return response.response.text();
+        case 'openai':
+            response = await llm.invoke(prompt);
+            return response;
+        case 'ollama':
+            response = await llm.invoke(prompt);
+            return response;
+        default:
+            throw new Error(`Unsupported LLM provider: ${config.llm_provider}`);
+    }
+}
+
+
 async function queryGemini(genAI, prompt, history, config, retries = 3) {
     const model = genAI.getGenerativeModel({ model: config.model_name });
     const context = await buildContext(prompt);
     const conversationContext = formatConversationHistory(history);
-    const fullPrompt = constructFullPrompt(context, conversationContext, prompt);
+    const fullPrompt = await constructFullPrompt(genAI, context, conversationContext, prompt);
 
     let fullResponse = '';
 
@@ -77,7 +121,7 @@ async function queryGemini(genAI, prompt, history, config, retries = 3) {
 async function queryOpenAI(openai, prompt, history, config) {
     const context = await buildContext(prompt);
     const conversationContext = formatConversationHistory(history);
-    const fullPrompt = constructFullPrompt(context, conversationContext, prompt);
+    const fullPrompt = await constructFullPrompt(openai, context, conversationContext, prompt);
 
     let fullResponse = '';
     let buffer = '';
@@ -113,7 +157,7 @@ async function queryOpenAI(openai, prompt, history, config) {
 async function queryOllama(ollama, prompt, history) {
     const context = await buildContext(prompt);
     const conversationContext = formatConversationHistory(history);
-    const fullPrompt = constructFullPrompt(context, conversationContext, prompt);
+    const fullPrompt = await constructFullPrompt(ollama, context, conversationContext, prompt);
 
     const response = await ollama.invoke(fullPrompt);
     return response;
@@ -138,8 +182,20 @@ function formatConversationHistory(history) {
     return history.map(item => `${item.role}: ${item.content}`).join('\n');
 }
 
-function constructFullPrompt(context, conversationHistory, prompt) {
+async function constructFullPrompt(llm, context, conversationHistory, prompt) {
 
+    const standAloneQuestion = await getStandAloneQuestion(llm, prompt, conversationHistory);
+
+    // add delay of half second
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    let finalUserQuestion = prompt
+
+    if (standAloneQuestion !== "No Question Provided") {
+        finalUserQuestion = standAloneQuestion
+    }
+
+    finalUserQuestion = finalUserQuestion.replace("standalone question:", "").trim();
 
     const contextText = context.map(item => item.text).join('\n');
 
@@ -159,8 +215,17 @@ function constructFullPrompt(context, conversationHistory, prompt) {
     Conversation history:
     ${conversationHistory}
 
-    Question: ${prompt}
+    Question: ${finalUserQuestion}
     Answer:`;
+
+    console.log()
+
+    if (finalUserQuestion !== prompt) {
+        console.log('--------------------------------------------------------------------------');
+        console.log('Converted Smart Question: ', finalUserQuestion);
+        console.log('--------------------------------------------------------------------------');
+        console.log()
+    }
 
     console.log('--------------------------------------------------------------------------');
     console.log('Matched Context Files:');
