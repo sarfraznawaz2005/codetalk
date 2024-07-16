@@ -16,9 +16,12 @@
     ".css": true
   },
   "ignore_patterns": [
-    "node_modules/**",
-    "dist/**",
-    ".git/**",
+    "package-lock.json",
+    "LICENSE",
+    ".gitignore",
+    "/node_modules",
+    "/dist",
+    "/.git",
     "*.log"
   ]
 }

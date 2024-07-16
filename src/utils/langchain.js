@@ -210,11 +210,9 @@ async function constructFullPrompt(llm, context, conversationHistory, prompt) {
     // add delay of half second
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    let finalUserQuestion = prompt
+    let finalUserQuestion = standAloneQuestion.toLowerCase()
+        .includes("no question provided") ? prompt : standAloneQuestion;
 
-    if (standAloneQuestion !== "No Question Provided") {
-        finalUserQuestion = standAloneQuestion
-    }
 
     finalUserQuestion = finalUserQuestion.replace("standalone question:", "").trim();
 
@@ -241,7 +239,10 @@ async function constructFullPrompt(llm, context, conversationHistory, prompt) {
 
     console.log()
 
-    if (finalUserQuestion !== prompt) {
+    if (
+        !finalUserQuestion.toLowerCase().includes("no question provided") &&
+        finalUserQuestion.toLowerCase() !== prompt.toLowerCase()
+    ) {
         console.log('--------------------------------------------------------------------------');
         console.log('\x1b[33mConverted Smart Question: \x1b[0m', finalUserQuestion);
         console.log('--------------------------------------------------------------------------');
