@@ -83,6 +83,9 @@ async function getStandAloneQuestion(llm, query, conv_history) {
 async function queryGemini(genAI, prompt, history, config, retries = 3) {
     const model = genAI.getGenerativeModel({
         model: config.model_name,
+        generationConfig: {
+            maxOutputTokens: 8192,
+        },
         safetySettings: [
             {
                 category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -255,6 +258,7 @@ async function constructFullPrompt(llm, context, conversationHistory, prompt) {
     console.log(context.map(item => '• ' + item.file).join('\n'));
     console.log('--------------------------------------------------------------------------');
     console.log()
+    console.log('\x1b[0m'); // reset default color just in case.
 
     // console.log('________________________________________________________________');
     // console.log(fullPrompt);
