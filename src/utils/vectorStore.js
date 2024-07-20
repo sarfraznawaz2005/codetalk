@@ -83,8 +83,7 @@ async function createVectorStore() {
                 documents.push({
                     pageContent: content,
                     metadata: {
-                        source: relativePath,
-                        fileType: path.extname(entry.name).replace('.', '')
+                        source: relativePath
                     }
                 });
             }
