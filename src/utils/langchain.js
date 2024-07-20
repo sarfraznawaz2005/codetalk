@@ -191,7 +191,7 @@ async function queryOllama(ollama, prompt, history) {
 async function buildContext(userQuestion) {
     const vectorStore = await loadVectorStore();
 
-    const documents = await vectorStore.similaritySearch(userQuestion, 5);
+    const documents = await vectorStore.similaritySearch(userQuestion, 10);
     const context = [];
 
     for (const doc of documents) {
